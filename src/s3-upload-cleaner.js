@@ -1,0 +1,41 @@
+var Q = require('q');
+var AWS = require('aws-sdk');
+var uuid = require('node-uuid');
+
+var MessageSink = require('message-sink');
+var IspyContext = require('ispy-context');
+
+var Cleaner = require('./cleaner');
+
+var config = require('./configuration.json').reduce(function (data, entry) {
+    data[entry.key] = entry.value;
+    return data;
+}, {});
+
+Q.longStackSupport = true;
+
+var handler = function (event, context) {
+    console.log("event =", event);
+
+    var ispyContext = new IspyContext(uuid.v4(), new MessageSink(config.ispy_topic));
+    ispyContext.putLambdaContext(context);
+
+    var s3Client = new AWS.S3({ region: 'eu-west-1' });
+
+    var cleaner = new Cleaner(s3Client, config, ispyContext);
+
+    Q(true)
+        .then(function () {
+            return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.starting']);
+        })
+        .then(cleaner.run)
+        .then(function () {
+            return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.complete']);
+        })
+        .then(context.succeed)
+        .done();
+};
+
+module.exports = {
+    handler: handler
+};
