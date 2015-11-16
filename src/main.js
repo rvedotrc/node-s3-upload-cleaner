@@ -12,6 +12,8 @@ var handler = function () {
     var config = {
         bucket_location_match: ".*",
         bucket_name_match: ".*",
+        key_match: ".*",
+        dry_run: true,
     };
 
     var messageSink = {

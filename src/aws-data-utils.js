@@ -8,7 +8,7 @@ var executor = new Executor(10);
 
 var doCollectFromAws = function(nextJob, deferred, client, method, args, paginationHelper) {
     if (!args) args = {};
-    console.log("collectFromAws", client.serviceIdentifier, method, args);
+    // console.log("collectFromAws", client.serviceIdentifier, method, args);
 
     var cb = function (err, data) {
         if (err === null) {

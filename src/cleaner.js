@@ -31,8 +31,8 @@ var SingleBucketCleaner = function (s3Client, bucketName, config, ispyContext) {
     };
 
     var handleUpload = function (upload) {
-        console.log("handleUpload", bucketName, upload);
-        // FIXME apply key check
+        // console.log("handleUpload", bucketName, upload);
+        if (!upload.Key.match(config.key_match)) return;
 
         // ESSENTIAL: check initiated date; return if too young
         var thresholdDate = new Date(new Date() - 86400000*1); // 24 hours ago
@@ -43,8 +43,22 @@ var SingleBucketCleaner = function (s3Client, bucketName, config, ispyContext) {
 
         return handleParts(upload, {})
             .then(function (answer) {
-                console.log("upload", upload.UploadId, "enumerated as", answer);
-                // TODO "abortMultipartUpload", { Bucket: x, Key: y, UploadId: z }
+                // console.log("upload", bucketName, upload.Key, upload.UploadId, "enumerated as", answer);
+                var toLog = {
+                    bucketName: bucketName,
+                    upload: upload,
+                    answer: answer,
+                };
+
+                if (config.dry_run !== false) {
+                    console.log(JSON.stringify(toLog));
+                    return;
+                }
+
+                return awsDataUtils.collectFromAws(s3Client, "abortMultipartUpload", { Bucket: bucketName, Key: upload.Key, UploadId: upload.UploadId })
+                    .then(function () {
+                        console.log(JSON.stringify(toLog));
+                    });
             });
     };
 
@@ -79,7 +93,8 @@ var Cleaner = function (s3Client, config, ispyContext) {
         return awsDataUtils.collectFromAws(s3Client, "getBucketLocation", { Bucket: bucketName })
             .then(function (r) {
                 console.log("Bucket", bucketName, "is in location", r.LocationConstraint);
-                // FIXME apply location check
+                if (!r.LocationConstraint.match(config.bucket_location_match)) return;
+
                 var region = r.LocationConstraint;
                 if (region === 'EU') region = 'eu-west-1';
                 console.log("Bucket", bucketName, "is in region", region);
@@ -96,7 +111,7 @@ var Cleaner = function (s3Client, config, ispyContext) {
             .then(function (r) {
                 return Q.all(
                     r.Buckets.map(function (d) {
-                        // FIXME apply bucket name check
+                        if (!d.Name.match(config.bucket_name_match)) return;
                         return cleanBucket(d.Name);
                     })
                 );

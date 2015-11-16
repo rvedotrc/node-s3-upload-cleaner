@@ -14,5 +14,9 @@
   {
     "key": "key_match",
     "value": ".*"
+  },
+  {
+    "key": "dry_run",
+    "value": true
   }
 ]
