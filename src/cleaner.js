@@ -35,9 +35,9 @@ var SingleBucketCleaner = function (s3Client, bucketName, config, ispyContext) {
         if (!upload.Key.match(config.key_match)) return;
 
         // ESSENTIAL: check initiated date; return if too young
-        var thresholdDate = new Date(new Date() - 86400000*1); // 24 hours ago
-        if (upload.Initiated > thresholdDate) {
-            console.log("Ignoring fresh upload", bucketName, upload);
+        if (!config.threshold_date) throw "no threshold_date";
+        if (upload.Initiated > config.threshold_date) {
+            console.log("Ignoring fresh upload", bucketName, upload.UploadId, "from", upload.Initiated);
             return;
         }
 
