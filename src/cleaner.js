@@ -14,7 +14,7 @@ var SingleBucketCleaner = function (s3Client, bucketName, config, ispyContext) {
                     return prev + next.Size;
                 }, 0);
 
-                console.log("listParts", bucketName, upload.Key, upload.UploadId, params.PartNumberMarker, "yielded", partCount, totalSize);
+                // console.log("listParts", bucketName, upload.Key, upload.UploadId, params.PartNumberMarker, "yielded", partCount, totalSize);
 
                 if (r.IsTruncated) {
                     return handleParts(upload, { PartNumberMarker: r.NextPartNumberMarker })
@@ -43,21 +43,27 @@ var SingleBucketCleaner = function (s3Client, bucketName, config, ispyContext) {
 
         return handleParts(upload, {})
             .then(function (answer) {
-                // console.log("upload", bucketName, upload.Key, upload.UploadId, "enumerated as", answer);
                 var toLog = {
-                    bucketName: bucketName,
-                    upload: upload,
-                    answer: answer,
+                    bucket_name: bucketName,
+                    upload_key: upload.Key,
+                    upload_initiated: upload.Initiated.getTime()+"",
+                    upload_storage_class: upload.StorageClass,
+                    upload_initiator_id: upload.Initiator.ID,
+                    upload_initiator_display: upload.Initiator.DisplayName,
+                    // not logging: Owner; UploadId
+                    part_count: answer.partCount+"",
+                    total_size: answer.totalSize+"",
                 };
+                var myContext = ispyContext.using(toLog);
 
                 if (config.dry_run !== false) {
-                    console.log(JSON.stringify(toLog));
-                    return;
+                    return Q.npost(myContext.using("dry_run", "true"), 'ispy', ['s3uploadcleaner.clean']);
                 }
 
                 return awsDataUtils.collectFromAws(s3Client, "abortMultipartUpload", { Bucket: bucketName, Key: upload.Key, UploadId: upload.UploadId })
                     .then(function () {
-                        console.log(JSON.stringify(toLog));
+                        toLog.dry_run = false;
+                        return Q.npost(myContext.using("dry_run", "false"), 'ispy', ['s3uploadcleaner.clean']);
                     });
             });
     };
