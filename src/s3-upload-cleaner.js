@@ -24,9 +24,21 @@ var handler = function (event, context) {
 
     var cleaner = new Cleaner(s3Client, config, ispyContext);
 
-    Q(true)
+    // FIXME, set var thresholdDate
+    var thresholdDate = null;
+
+    return Q(true)
         .then(function () {
-            return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.starting']);
+            var myContext = ispyContext.using("threshold_date", thresholdDate.getTime() + "");
+            for (var c in config) {
+                myContext = myContext.using(c, config[c]+"");
+            }
+            config.threshold_date = thresholdDate;
+
+            return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.starting'])
+                .then(function () {
+                    return Q.npost(myContext, 'ispy', ['s3uploadcleaner.config']);
+                });
         })
         .then(cleaner.run)
         .then(function () {

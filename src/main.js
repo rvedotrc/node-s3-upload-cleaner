@@ -13,7 +13,7 @@ var handler = function () {
         bucket_location_match: ".*",
         bucket_name_match: ".*",
         key_match: ".*",
-        dry_run: true,
+        dry_run: false,
     };
 
     var messageSink = {
@@ -29,9 +29,20 @@ var handler = function () {
 
     var cleaner = new Cleaner(s3Client, config, ispyContext);
 
+    var thresholdDate = new Date(new Date() - 86400000 * 7);
+
     return Q(true)
         .then(function () {
-            return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.starting']);
+            var myContext = ispyContext.using("threshold_date", thresholdDate.getTime() + "");
+            for (var c in config) {
+                myContext = myContext.using(c, config[c]+"");
+            }
+            config.threshold_date = thresholdDate;
+
+            return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.starting'])
+                .then(function () {
+                    return Q.npost(myContext, 'ispy', ['s3uploadcleaner.config']);
+                });
         })
         .then(cleaner.run)
         .then(function () {
