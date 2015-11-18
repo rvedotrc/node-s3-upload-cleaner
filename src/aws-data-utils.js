@@ -32,6 +32,7 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
                     client[method].apply(client, [args, cb]);
                 }, delay);
             } else {
+                console.log("Got an error from", method, args, err);
                 deferred.reject(err);
             }
         }
