@@ -13,7 +13,7 @@ var handler = function () {
         bucket_location_match: ".*",
         bucket_name_match: ".*",
         key_match: ".*",
-        dry_run: true,
+        dry_run: false,
     };
 
     var messageSink = {
