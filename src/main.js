@@ -4,7 +4,7 @@ var uuid = require('node-uuid');
 
 var IspyContext = require('ispy-context');
 
-var Cleaner = require('./cleaner');
+var accountCleaner = require('./account-cleaner');
 
 Q.longStackSupport = true;
 
@@ -13,7 +13,7 @@ var handler = function () {
         bucket_location_match: ".*",
         bucket_name_match: ".*",
         key_match: ".*",
-        dry_run: false,
+        dry_run: true,
     };
 
     var messageSink = {
@@ -27,7 +27,7 @@ var handler = function () {
 
     var s3Client = new AWS.S3({ region: 'eu-west-1' });
 
-    var cleaner = new Cleaner(s3Client, config, ispyContext);
+    var myAccountCleaner = new accountCleaner.AccountCleaner(s3Client, config, ispyContext);
 
     var thresholdDate = new Date(new Date() - 86400000 * 7);
 
@@ -44,7 +44,7 @@ var handler = function () {
                     return Q.npost(myContext, 'ispy', ['s3uploadcleaner.config']);
                 });
         })
-        .then(cleaner.run)
+        .then(myAccountCleaner.run)
         .then(function () {
             return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.complete']);
         })

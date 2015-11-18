@@ -5,7 +5,7 @@ var uuid = require('node-uuid');
 var MessageSink = require('message-sink');
 var IspyContext = require('ispy-context');
 
-var Cleaner = require('./cleaner');
+var accountCleaner = require('./account-cleaner');
 
 var config = require('./configuration.json').reduce(function (data, entry) {
     data[entry.key] = entry.value;
@@ -22,7 +22,7 @@ var handler = function (event, context) {
 
     var s3Client = new AWS.S3({ region: 'eu-west-1' });
 
-    var cleaner = new Cleaner(s3Client, config, ispyContext);
+    var myAccountCleaner = new accountCleaner.AccountCleaner(s3Client, config, ispyContext);
 
     // FIXME, set var thresholdDate
     var thresholdDate = null;
@@ -40,7 +40,7 @@ var handler = function (event, context) {
                     return Q.npost(myContext, 'ispy', ['s3uploadcleaner.config']);
                 });
         })
-        .then(cleaner.run)
+        .then(myAccountCleaner.run)
         .then(function () {
             return Q.npost(ispyContext, 'ispy', ['s3uploadcleaner.complete']);
         })
