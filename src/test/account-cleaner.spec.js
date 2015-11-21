@@ -19,11 +19,6 @@ describe("AccountCleaner", function () {
         sandbox.restore();
     });
 
-    // lists buckets
-    // applies bucket_name_match
-    // calls BucketCleaner with client in correct region
-    // knows that EU == eu-west-1
-
     it("processes zero buckets", function (mochaDone) {
         var s3Client = {
             listBuckets: function (params, cb) {
@@ -40,24 +35,16 @@ describe("AccountCleaner", function () {
         }).done();
     });
 
-    it("processes each bucket", function (mochaDone) {
-        var buckets = [
-          { Name: 'one' },
-          { Name: 'two' },
-        ];
-
+    var makeUnderTest = function (bucketRegions, buckets, config, ispyContext, calledBuckets) {
         var s3Client = {
             listBuckets: function (params, cb) {
                 assert.deepEqual(params, {});
                 cb(null, { Buckets: buckets });
             },
             getBucketLocation: function (params, cb) {
-                cb(null, { LocationConstraint: 'region-for-' + params.Bucket });
+                cb(null, { LocationConstraint: bucketRegions[params.Bucket] });
             },
         };
-
-        var config = {id:'config'};
-        var ispyContext = {id: 'ispyContext'};
 
         sandbox.stub(AWS, 'S3', function (params) {
             return {
@@ -66,33 +53,132 @@ describe("AccountCleaner", function () {
             };
         });
 
-        var calledForOne = false;
-        var calledForTwo = false;
-
         sandbox.stub(bucketCleaner, 'BucketCleaner', function (s3Client, bucketName, bc_config, bc_ispyContext) {
-            if (bucketName === 'one') {
-                calledForOne = true;
-                assert.equal(s3Client.params.region, 'region-for-one');
-            }
-            if (bucketName === 'two') {
-                calledForTwo = true;
-                assert.equal(s3Client.params.region, 'region-for-two');
+            if (!bucketRegions[bucketName]) {
+                throw 'Called for unexpected bucket ' + bucketName;
             }
 
+            calledBuckets[bucketName] = s3Client.params.region;
             assert.equal(bc_config, config);
             assert.equal(bc_ispyContext, ispyContext);
             console.log("new BucketCleaner called with", arguments);
+
             return {
                 run: function () {},
             };
         });
 
-        var underTest = new accountCleaner.AccountCleaner(s3Client, config, ispyContext);
+        return new accountCleaner.AccountCleaner(s3Client, config, ispyContext);
+    };
+
+    it("processes each bucket", function (mochaDone) {
+        var bucketRegions = {
+            one: 'region-for-one',
+            two: 'region-for-two',
+        };
+
+        var buckets = [
+          { Name: 'one' },
+          { Name: 'two' },
+        ];
+
+        var config = {id:'config'};
+        var ispyContext = {id: 'ispyContext'};
+        var calledBuckets = {};
+
+        var underTest = makeUnderTest(bucketRegions, buckets, config, ispyContext, calledBuckets);
+
         underTest.run().then(function () {
-            assert(calledForOne);
-            assert(calledForTwo);
+            assert.deepEqual(calledBuckets, bucketRegions);
             mochaDone();
         }).done();
     });
+
+    it("respects bucket_name_match", function (mochaDone) {
+        var bucketRegions = {
+            one: 'region-for-one',
+            two: 'region-for-two',
+            three: 'region-for-three',
+        };
+
+        var buckets = [
+          { Name: 'one' },
+          { Name: 'two' },
+          { Name: 'three' },
+        ];
+
+        var config = { bucket_name_match: '^t' };
+        var ispyContext = {id: 'ispyContext'};
+        var calledBuckets = {};
+
+        var underTest = makeUnderTest(bucketRegions, buckets, config, ispyContext, calledBuckets);
+
+        underTest.run().then(function () {
+            assert.deepEqual(calledBuckets, {
+                two: 'region-for-two',
+                three: 'region-for-three',
+            });
+            mochaDone();
+        }).done();
+    });
+
+    it("respects bucket_location_match", function (mochaDone) {
+        var bucketRegions = {
+            one: 'region-for-one',
+            two: 'region-for-two',
+            three: 'region-for-three',
+        };
+
+        var buckets = [
+          { Name: 'one' },
+          { Name: 'two' },
+          { Name: 'three' },
+        ];
+
+        var config = { bucket_location_match: 'for-t' };
+        var ispyContext = {id: 'ispyContext'};
+        var calledBuckets = {};
+
+        var underTest = makeUnderTest(bucketRegions, buckets, config, ispyContext, calledBuckets);
+
+        underTest.run().then(function () {
+            assert.deepEqual(calledBuckets, {
+                two: 'region-for-two',
+                three: 'region-for-three',
+            });
+            mochaDone();
+        }).done();
+    });
+
+    it("knows that EU == eu-west-1", function (mochaDone) {
+        var bucketRegions = {
+            one: 'eu-west-1',
+            two: 'eu-west-2',
+            three: 'EU',
+        };
+
+        var buckets = [
+          { Name: 'one' },
+          { Name: 'two' },
+          { Name: 'three' },
+        ];
+
+        var config = {};
+        var ispyContext = {id: 'ispyContext'};
+        var calledBuckets = {};
+
+        var underTest = makeUnderTest(bucketRegions, buckets, config, ispyContext, calledBuckets);
+
+        underTest.run().then(function () {
+            assert.deepEqual(calledBuckets, {
+                one: 'eu-west-1',
+                two: 'eu-west-2',
+                three: 'eu-west-1',
+            });
+            mochaDone();
+        }).done();
+    });
+
+    // TODO it preserves original s3Client options except region/endpoint
 
 });
