@@ -35,7 +35,7 @@ describe("AccountCleaner", function () {
         }).done();
     });
 
-    var makeUnderTest = function (bucketRegions, buckets, config, ispyContext, calledBuckets) {
+    var makeUnderTest = function (bucketRegions, buckets, config, ispyContext, calledBuckets, runner) {
         var s3Client = {
             listBuckets: function (params, cb) {
                 assert.deepEqual(params, {});
@@ -64,7 +64,8 @@ describe("AccountCleaner", function () {
             console.log("new BucketCleaner called with", arguments);
 
             return {
-                run: function () {},
+                bucket: bucketName,
+                run: runner || (function () {}),
             };
         });
 
@@ -177,6 +178,37 @@ describe("AccountCleaner", function () {
             });
             mochaDone();
         }).done();
+    });
+
+    it("fails if any bucket fails", function (mochaDone) {
+        var bucketRegions = {
+            one: 'r',
+            two: 'r',
+            three: 'r',
+        };
+
+        var buckets = [
+          { Name: 'one' },
+          { Name: 'two' },
+          { Name: 'three' },
+        ];
+
+        var config = {};
+        var ispyContext = {id: 'ispyContext'};
+        var calledBuckets = {};
+
+        var runner = function () {
+            if (this.bucket === 'two') throw 'bucket two fails';
+        };
+
+        var underTest = makeUnderTest(bucketRegions, buckets, config, ispyContext, calledBuckets, runner);
+
+        underTest.run().then(
+            function () {
+                throw 'Bucket failure should have caused promise failure';
+            }, function () {
+                mochaDone();
+            }).done();
     });
 
     // TODO it preserves original s3Client options except region/endpoint
