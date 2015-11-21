@@ -48,6 +48,7 @@ describe("AccountCleaner", function () {
 
         var s3Client = {
             listBuckets: function (params, cb) {
+                assert.deepEqual(params, {});
                 cb(null, { Buckets: buckets });
             },
             getBucketLocation: function (params, cb) {
