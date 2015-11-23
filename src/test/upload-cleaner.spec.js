@@ -20,7 +20,7 @@ describe("UploadCleaner", function () {
         sandbox.restore();
     });
 
-    it("aborts an upload", function (mochaDone) {
+    var runUpload = function (dryRun) {
         var bucketName = 'some-bucket';
 
         var upload = {
@@ -33,7 +33,7 @@ describe("UploadCleaner", function () {
         };
 
         var config = {
-            dry_run: false,
+            dry_run: dryRun,
         };
 
         var aborted = false;
@@ -63,9 +63,13 @@ describe("UploadCleaner", function () {
         var ispyContext = new IspyContext('some-activity-id', messageSink);
 
         var underTest = new uploadCleaner.UploadCleaner(s3Client, bucketName, upload, config, ispyContext);
-        underTest.run()
+        return underTest.run()
             .then(function () {
-                assert(aborted, "Upload should have been aborted");
+                if (dryRun) {
+                    assert(!aborted, "Upload should not have been aborted");
+                } else {
+                    assert(aborted, "Upload should have been aborted");
+                }
 
                 receivedEvents.map(function (e) { delete e.event_timestamp; });
                 assert.deepEqual(receivedEvents, [{
@@ -79,11 +83,21 @@ describe("UploadCleaner", function () {
                     upload_initiator_display: 'the-initiator',
                     part_count: '0',
                     total_size: '0',
-                    dry_run: 'false',
+                    dry_run: dryRun.toString(),
                 }]);
+            });
+    };
 
-                mochaDone();
-            }).done();
+    it("aborts an upload", function (mochaDone) {
+        runUpload(false)
+            .then(function () { mochaDone(); })
+            .done();
+    });
+
+    it("respects dry_run", function (mochaDone) {
+        runUpload(true)
+            .then(function () { mochaDone(); })
+            .done();
     });
 
     it("sums parts", function (mochaDone) {
@@ -95,11 +109,6 @@ describe("UploadCleaner", function () {
     });
 
     it("swallows NoSuchUpload errors", function (mochaDone) {
-        mochaDone();
-    });
-
-    it("respects dry_run", function (mochaDone) {
-        // with iSpy
         mochaDone();
     });
 
