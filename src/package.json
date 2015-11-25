@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "cosmos-configuration": "^0.1.0",
+    "fixed-size-executor": "^0.1",
     "http-proxy-agent": "^0.2.6",
     "https-proxy-agent": "^0.3.5",
     "ispy-context": "^1.4.0",

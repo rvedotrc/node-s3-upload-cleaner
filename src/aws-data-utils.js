@@ -1,10 +1,9 @@
 var Q = require('q');
+var FixedSizeExecutor = require('fixed-size-executor');
 var fs = require('fs');
 var merge = require('merge');
 
-var Executor = require('./executor');
-
-var executor = new Executor(10);
+var executor = new FixedSizeExecutor(10);
 
 var doCollectFromAws = function(nextJob, deferred, client, method, args, paginationHelper) {
     if (!args) args = {};
