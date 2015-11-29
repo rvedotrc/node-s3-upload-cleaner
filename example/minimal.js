@@ -14,14 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-var accountCleaner = require('./account-cleaner');
-var bucketCleaner = require('./bucket-cleaner');
-var uploadCleaner = require('./upload-cleaner');
-var IspyContextLite = require('./ispy-context-lite');
+var s3UploadCleaner = require('s3-upload-cleaner');
+var AWS = require('aws-sdk');
 
-module.exports = {
-    AccountCleaner: accountCleaner.AccountCleaner,
-    BucketCleaner: bucketCleaner.BucketCleaner,
-    UploadCleaner: uploadCleaner.UploadCleaner,
-    IspyContextLite: IspyContextLite,
+var config = {
+        bucket_location_match: ".*",
+        bucket_name_match: ".*",
+        key_match: ".*",
+        dry_run: false,
+	threshold_date: new Date(new Date() - 1000 * 60 * 60 * 24 * 7),
 };
+
+var s3Client = new AWS.S3({ region: 'eu-west-1' });
+var ispyContext = new s3UploadCleaner.IspyContextLite();
+var cleaner = new s3UploadCleaner.AccountCleaner(s3Client, config, ispyContext);
+
+cleaner.run().done();

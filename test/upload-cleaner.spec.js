@@ -1,10 +1,25 @@
+/*
+Copyright 2015 Rachel Evans
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 var assert = require("assert");
 var sinon = require("sinon");
 require("should");
 
-var uploadCleaner = require("../upload-cleaner");
+var s3UploadCleaner = require("../s3-upload-cleaner");
 
-var IspyContext = require("ispy-context");
 var Q = require("q");
 Q.longStackSupport = true;
 
@@ -54,15 +69,15 @@ describe("UploadCleaner", function () {
 
         var receivedEvents = [];
         var messageSink = {
-            write: function (m, cb) {
-                var events = JSON.parse(m);
-                receivedEvents = receivedEvents.concat(events);
+            write: function (event, cb) {
+                console.log("Got ispy", event);
+                receivedEvents.push(event);
                 cb(null);
             },
         };
-        var ispyContext = new IspyContext('some-activity-id', messageSink);
+        var ispyContext = new s3UploadCleaner.IspyContextLite(messageSink);
 
-        var underTest = new uploadCleaner.UploadCleaner(s3Client, bucketName, upload, config, ispyContext);
+        var underTest = new s3UploadCleaner.UploadCleaner(s3Client, bucketName, upload, config, ispyContext);
         return underTest.run()
             .then(function () {
                 if (dryRun) {
@@ -74,7 +89,6 @@ describe("UploadCleaner", function () {
                 receivedEvents.map(function (e) { delete e.event_timestamp; });
                 assert.deepEqual(receivedEvents, [{
                     event_name: 's3uploadcleaner.clean',
-                    activity_id: 'some-activity-id',
                     bucket_name: 'some-bucket',
                     upload_key: 'some-key',
                     upload_initiated: '123456789',

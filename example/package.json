@@ -1,0 +1,13 @@
+{
+  "author": "Rachel Evans (http://rve.org.uk/)",
+  "dependencies": {
+    "aws-sdk": "^2.2",
+    "merge": "^1.2.0",
+    "s3-upload-cleaner": "^1.0"
+  },
+  "description": "Abort stale S3 multipart uploads",
+  "license": "Apache 2.0",
+  "main": "minimal.js",
+  "name": "s3-upload-cleaner-minimal",
+  "version": "0.0.0"
+}
