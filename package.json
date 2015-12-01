@@ -1,13 +1,13 @@
 {
   "author": "Rachel Evans (http://rve.org.uk/)",
   "dependencies": {
+    "aws-sdk": "^2.2",
     "fixed-size-executor": "^0.1",
     "merge": "^1.2.0",
     "q": "^1.4.1"
   },
   "description": "Abort stale S3 multipart uploads",
   "devDependencies": {
-    "aws-sdk": "^2.1.33",
     "istanbul": "^0.3.13",
     "jshint": "^2.8.0",
     "mocha": "^2.2.5",
@@ -30,11 +30,15 @@
     "aws",
     "s3"
   ],
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "main": "s3-upload-cleaner.js",
   "name": "s3-upload-cleaner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rvedotrc/node-s3-upload-cleaner.git"
+  },
   "scripts": {
     "test": "node_modules/.bin/istanbul cover node_modules/.bin/_mocha"
   },
-  "version": "0.2.0"
+  "version": "0.2.1"
 }
