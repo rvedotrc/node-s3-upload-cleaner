@@ -60,14 +60,14 @@ Configuration
 
 The config object (see above) recognises a number of keys:
 
- * `bucket_name_match`: a regular expression string; buckets whose names don't
-   match this will be ignored.
+ * `bucket_name_match`: a regular expression string; only buckets whose names
+   match this will be included.
  
- * `bucket_location_match`: a regular expression string; buckets whose
-   locations (aka region) don't match this will be ignored.
+ * `bucket_location_match`: a regular expression string; only buckets whose
+   locations (aka region) match this will be searched.
 
- * `key_match`: a regular expression string; multipart uploads going to keys
-   that don't match this will be ignored.
+ * `key_match`: a regular expression string; only multipart uploads going to keys
+   that match this will be included.
 
  * `threshold_date`: a Date object; multipart uploads initiated after this
    date will be ignored.
