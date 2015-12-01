@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 var Q = require('q');
-var AWS = require('aws-sdk');
 var merge = require('merge');
 
 var awsDataUtils = require('./aws-data-utils');
