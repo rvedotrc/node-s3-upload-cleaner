@@ -90,6 +90,6 @@ exports.paginationHelper = function (responseTokenField, requestTokenField, resp
 };
 
 exports.setConcurrency = function (n) {
-    executor = new Executor(n);
+    executor = new FixedSizeExecutor(n);
 };
 
